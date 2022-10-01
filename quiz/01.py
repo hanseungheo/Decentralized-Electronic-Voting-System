@@ -8,6 +8,10 @@ cnt=0
 def vote_list():
     return jsonify(chain)
 
+@app.route('/abcd', methods=['GET'])
+def vote_abcd():
+    return jsonify({'status': 'fail'})
+
 
 @app.route('/open', methods=['POST'])
 def vote_open():
