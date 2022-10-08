@@ -13,24 +13,20 @@ class Tab1(QWidget):
         self.devs = devs
         self.current_vote_id = -1
 
-        self.vote_list_group_box=  QGroupBox('투표 목록')
+        self.vote_list_group_box= QGroupBox('투표 목록')
 
         self.vote_list = dict()
         self.vote_list_widget = QListWidget()
         self.vote_list_widget.clicked.connect(self.select_vote)
-
         self.vote_list_layout = QVBoxLayout()
         self.vote_list_layout.addWidget(self.vote_list_widget)
         self.vote_list_group_box.setLayout(self.vote_list_layout)
 
         self.vote_list_group_box = QGroupBox('투표')
-
         self.question_label = QLabel(self)
-
         self.option1_button = QPushButton()
         self.option2_button = QPushButton()
         self.option3_button = QPushButton()
-
         self.vote_layout = QVBoxLayout()
         self.vote_layout.addWidget(self.question_label)
         self.vote_layout.addWidget(self.option1_button)
@@ -183,7 +179,7 @@ class Tab2(QWidget):
         block = {
             'type' : 'open',
             'data' :  {
-                'id' : str(uuid.uuid4())
+                'id' : str(uuid.uuid4()),
                 'question': self.question_line_edit.text(),
                 'options' : [
                     self.option1_line_edit.text(),
@@ -208,14 +204,14 @@ class Tab2(QWidget):
         self.option3_line_edit.setText('')
 
 
-class SocketReciever(QThread):
+class SocketReceiver(QThread):
     update_vote_list_signal = pyqtSignal()
 
     def __init__(self, devs, connection, address):
         super().__init__()
         self.devs = devs
         self.connection = connection
-        self.address =address
+        self.address = address
 
     def run(self):
         while True:
@@ -233,14 +229,57 @@ class SocketReciever(QThread):
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.connect(('127.0.0.1', data['data']['port']))
                 block = {
-                    'type' : 'list',
-                    'data' : {
+                    'type': 'list',
+                    'data': {
                         'chain' : self.devs.chain
                     }
                 }
                 s.sendall(json.dumps(block).encode())
                 self.devs.nodes.append((s, f'1237.0.0.1:{data["data"]["port"]}'))
+            elif data['type'] == 'list':
+                self.devs.chain = data['data']['chain']
+                self.update_vote_list_signal.emit()
+            elif data['type'] == 'open':
+                block = {
+                    'type': 'open',
+                    'data': {
+                        'id': data['data']['id'],
+                        'question': data['data']['question'],
+                        'options': data['data']['options']
+                    }
+                }
+                self.devs.chain.append(block)
+                self.update_vote_list_signal.emit()
+            elif data['type'] == 'vote':
+                block = {
+                    'type': 'vote',
+                    'data': {
+                        'id': data['data']['id'],
+                        'vote': data['data']['vote']
+                    }
+                }
+                self.devs.chain.append(block)
+                self.update_vote_list_signal.emit()
 
+class SocketListener(QThread):
+    update_vote_list_signal = pyqtSignal()
+
+    def __init__(self, devs):
+        super().__init__()
+        self.devs = devs
+
+    def run(self):
+        while True:
+            connection, address = self.devs.listen_socket.accept()
+            self.devs.nodes.append((connection, address))
+            print('연결 됨:', address)
+            self.receive_theread = SocketReceiver(self.devs, connection, address)
+            self.receive_theread.update_vote_list_signal.connect(self.update_vote_list)
+            self.receive_theread.start()
+
+    @pyqtSignal()
+    def update_vote_list(self):
+        self.update_vote_list_signal.emit()
 
 
 def exception_hook(except_type, value, traceback):
