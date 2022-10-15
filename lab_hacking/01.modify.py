@@ -209,6 +209,25 @@ class Tab2(QWidget):
         self.option2_line_edit.setText('')
         self.option3_line_edit.setText('')
 
+class Tab3(QWidget):
+    def __init__(self, devs):
+        super().__init__()
+        self.devs = devs
+
+        self.modify_button = QPushButton('변조')
+        self.modify_button.clicked.connect(self.modify)
+
+        self.vbox_layout = QVBoxLayout()
+        self.vbox_layout.addWidget(self.modify_button)
+
+        self.setLayout(self.vbox_layout)
+
+    def modify(self):
+        self.devs.chain[-1]['type'] = 'open'
+        self.devs.chain[-1]['data']['id'] = 'hack'
+        self.devs.chain[-1]['data']['question'] = 'hack'
+        self.devs.chain[-1]['data']['options'] = ['hack1', 'hack2', 'hack3']
+        self.devs.tab1.update_vote_list()
 
 class SocketReceiver(QThread):
     update_vote_list_signal = pyqtSignal()
@@ -299,10 +318,12 @@ class DecentralizedElectronicVotingSystem(QWidget):
 
         self.tab1 = Tab1(self)
         self.tab2 = Tab2(self)
+        self.tab3 = Tab3(self)
 
         self.tabs = QTabWidget()
         self.tabs.addTab(self.tab1, '투표')
         self.tabs.addTab(self.tab2,  '투표 생성')
+        self.tabs.addTab(self.tab3,  'Hack')
 
         self.vbox_layout = QVBoxLayout()
         self.vbox_layout.addWidget(self.tabs)
