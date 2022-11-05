@@ -306,8 +306,8 @@ class Tab2(QWidget):
                     'id': str(uuid.uuid4()),
                     'question': self.question_line_edit.text(),
                     'options': [
-                        self.option1_line_edit.text()
-                        self.option2_line_edit.text()
+                        self.option1_line_edit.text(),
+                        self.option2_line_edit.text(),
                         self.option3_line_edit.text()
                     ]
                 }
